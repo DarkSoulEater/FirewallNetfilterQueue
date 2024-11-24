@@ -8,6 +8,7 @@ accept/drop [name=py_reg_expr] [type=py_reg_expr] [data=py_reg_expr]
 Пример файла с правилами:
 ```
 accept name='\w+.ru'
+accept name='ya.com' type='A'
+accept data='87.240.137.164'
 drop name='\w+'
 ```
-Пропускает только запросы в домен .ru
