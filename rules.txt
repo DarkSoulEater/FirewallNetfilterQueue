@@ -1,0 +1,2 @@
+accept name='\w+.ru'
+drop name='\w+'
