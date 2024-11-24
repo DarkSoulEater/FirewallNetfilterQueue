@@ -20,11 +20,13 @@ class Rule():
             self.name = r'.*'
             self.type = r'.*'
             self.data = r'.*'
+            self.ttl = 0
         elif rule_type == 'drop':
             self.accept = False
             self.name = r'.*'
             self.type = r'.*'
             self.data = r'.*'
+            self.ttl = 0
 
         name = re.search(r'name\s*=\s*\'\S+\'', str)
         if name:
@@ -39,14 +41,21 @@ class Rule():
             self.type = (re.search(r'\'.+\'', type[0]))[0]
             self.type = self.type[1:-1]
 
-        data = re.search(r'data\s*=\s*\'\S\'', str)
+        data = re.search(r'data\s*=\s*\'\S+\'', str)
         if data:
             self.data = (re.search(r'\'.+\'', data[0]))[0]
+            self.data = self.data[1:-1]
 
-        print("Rule:")
+        ttl = re.search(r'ttl\s*=\s*\'\d\'', str)
+        if ttl:
+            self.ttl = (re.search(r'\'.+\'', ttl[0]))[0]
+            self.ttl = int(self.ttl[1:-1])
+
+        print("Rule:", '+' if self.accept == True else '-')
         print('\tName = ', self.name)
         print('\tType = ', self.type)
         print('\tData = ', self.data)
+        print('\tTTL = ', self.ttl)
         return
     
     def search(self, dns):
@@ -75,6 +84,10 @@ class Rule():
             data = re.search(self.data, an.rdata)
             if not data:
                 print("NM: Data: ", an.rdata, self.data)
+                match = False
+
+            if an.ttl < self.ttl:
+                print("TTL: so less")
                 match = False
 
             # print(type(an.type))
@@ -128,7 +141,7 @@ def main():
             pkt.accept()
             return
         
-        # dns.show()
+        dns.show()
 
         for rule in rules:
             res = rule.search(dns)
