@@ -3,6 +3,8 @@ from scapy.all import *
 import argparse
 import re
 import enum
+import sys
+from io import StringIO
 
 class Status(enum.Enum):
     accept = 0
@@ -15,38 +17,69 @@ class Rule():
         assert(rule_type in ['accept', 'drop'])
         if rule_type == 'accept':
             self.accept = True
-            self.name = r''
-            self.type = r''
-            self.data = r''
+            self.name = r'.*'
+            self.type = r'.*'
+            self.data = r'.*'
         elif rule_type == 'drop':
             self.accept = False
+            self.name = r'.*'
+            self.type = r'.*'
+            self.data = r'.*'
 
-        name = re.search(r'name\s*=\s*\'.+\'', str)
+        name = re.search(r'name\s*=\s*\'\S+\'', str)
         if name:
             self.name = (re.search(r'\'.+\'', name[0]))[0]
             self.name = self.name[1:-1]
             if self.name[-1] != '.':
                 self.name += '.'
 
-            print('Name = ', self.name)
 
-        type = re.search(r'type\s*=\s*\'.+\'', str)
+        type = re.search(r'type\s*=\s*\'\S+\'', str)
         if type:
             self.type = (re.search(r'\'.+\'', type[0]))[0]
-            print('Type = ', self.type)
+            self.type = self.type[1:-1]
 
-        data = re.search(r'data\s*=\s*\'.+\'', str)
+        data = re.search(r'data\s*=\s*\'\S\'', str)
         if data:
             self.data = (re.search(r'\'.+\'', data[0]))[0]
-            print('Data = ', data)
+
+        print("Rule:")
+        print('\tName = ', self.name)
+        print('\tType = ', self.type)
+        print('\tData = ', self.data)
         return
     
     def search(self, dns):
         match = True
         for an in dns.an:
+            old_stdout = sys.stdout
+            sys.stdout = mystdout = StringIO()
+            an.show()
+            sys.stdout = old_stdout
+            an_str = mystdout.getvalue()
+
+            # print("AN: ", an_str)
+
             name = re.search(self.name, an.rrname.decode())
             if not name:
+                print("NM: Name: ", an.rrname.decode(), self.name)
                 match = False
+
+            type = re.search(r'type\s*=\s*' + self.type, an_str)
+            if not type:
+                print("NM: Type: ", an_str, r'type\s*=\s*' + self.type)
+                match = False
+
+            # print(an.rdata)
+
+            data = re.search(self.data, an.rdata)
+            if not data:
+                print("NM: Data: ", an.rdata, self.data)
+                match = False
+
+            # print(type(an.type))
+            # print(an.summary())
+            # type = re.search(self.name, an.type.decode())
 
         if match == False:
             return Status.skip
