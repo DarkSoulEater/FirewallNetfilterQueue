@@ -14,19 +14,18 @@ class Status(enum.Enum):
 class Rule():
     def __init__(self, str:str):
         rule_type = str.split()[0]
+
+        self.name = r'.*'
+        self.type = r'.*'
+        self.data = r'.*'
+        self.ttl = 0
+        self.only_a = False;
+
         assert(rule_type in ['accept', 'drop'])
         if rule_type == 'accept':
             self.accept = True
-            self.name = r'.*'
-            self.type = r'.*'
-            self.data = r'.*'
-            self.ttl = 0
         elif rule_type == 'drop':
             self.accept = False
-            self.name = r'.*'
-            self.type = r'.*'
-            self.data = r'.*'
-            self.ttl = 0
 
         name = re.search(r'name\s*=\s*\'\S+\'', str)
         if name:
@@ -46,16 +45,21 @@ class Rule():
             self.data = (re.search(r'\'.+\'', data[0]))[0]
             self.data = self.data[1:-1]
 
-        ttl = re.search(r'ttl\s*=\s*\'\d\'', str)
+        ttl = re.search(r'ttl\s*=\s*\'\d+\'', str)
         if ttl:
             self.ttl = (re.search(r'\'.+\'', ttl[0]))[0]
             self.ttl = int(self.ttl[1:-1])
+        
+        flag_aa = re.search(r'aa\s*=\s*\'true\'', str)
+        if flag_aa:
+            self.only_a = True
 
         print("Rule:", '+' if self.accept == True else '-')
         print('\tName = ', self.name)
         print('\tType = ', self.type)
         print('\tData = ', self.data)
         print('\tTTL = ', self.ttl)
+        print('\tOnlyAA = ', self.only_a)
         return
     
     def search(self, dns):
@@ -93,6 +97,10 @@ class Rule():
             # print(type(an.type))
             # print(an.summary())
             # type = re.search(self.name, an.type.decode())
+
+        if self.only_a == True and dns.aa != 1:
+            print("AA: only aa = 1")
+            match = False
 
         if match == False:
             return Status.skip
