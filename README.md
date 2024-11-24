@@ -12,4 +12,3 @@ accept name='ya.com' type='A'
 accept data='87.240.137.164'
 drop name='\w+'
 ```
-Пропускает только запросы в домен .ru
